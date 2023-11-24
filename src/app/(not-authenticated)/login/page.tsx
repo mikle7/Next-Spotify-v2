@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { signIn } from "next-auth/react";
-import Image from "next/image";
+import { signIn } from 'next-auth/react';
+import Image from 'next/image';
 
 export default function Login() {
   const handleLogin = () => {
-    signIn("spotify", { callbackUrl: "http://localhost:3000" });
+    signIn('spotify', { callbackUrl: 'http://localhost:3000' });
   };
 
   return (
