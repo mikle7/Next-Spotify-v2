@@ -11,7 +11,7 @@ import {
   getUserLikedArtists,
   getUserLikedPlaylists,
   getUserLikedSongs,
-  sendRequestToMp3,
+  readPlaylistData,
 } from '@/lib/actions';
 import { Artist, Track } from '@/types/types';
 import { getGreeting } from '@/utils/clientUtils';
@@ -34,58 +34,13 @@ export default async function Home() {
 
   // const playlists = await getUserLikedPlaylists(session);
 
-  // const downloadTracks = await sendRequestToMp3();
+  // const downloadTracks = await readPlaylistData('Michael Bell');
 
   return (
     <section className="flex flex-col items-start">
       <h1 className="mt-8">Playlists</h1>
-      {/* <Playlists session={session} /> */}
+      <Playlists session={session} />
 
-      {/* <button onClick={() => getUserLikedPlaylists(session)}>
-        Get Playlists
-      </button> */}
-      {/* <div className="grid w-full grid-cols-12 gap-4">
-        {topTracks.map((track) => (
-          <Link
-            href={`/tracks/${track.id}`}
-            key={track.id}
-            className="flex items-center justify-between col-span-4 pr-4 truncate rounded-md group/item bg-paper-600 hover:bg-paper-400"
-          >
-            <div className="flex items-center gap-4">
-              {track.album.images.length > 0 ? (
-                <Image
-                  src={track.album.images[0].url}
-                  alt={track.name}
-                  width={72}
-                  height={72}
-                  className="object-cover h-full rounded-tl-md rounded-bl-md aspect-square"
-                />
-              ) : (
-                <Album size={20} />
-              )}
-              <h3 className="font-semibold truncate">{track.name}</h3>
-            </div>
-
-            <PlayTrackButton
-              track={track}
-              variant="filled"
-              className="invisible w-12 h-12 text-3xl group/btn group-hover/item:visible"
-            />
-          </Link>
-        ))}
-      </div> */}
-      {/*
-      <h1 className="mt-16">Recently played</h1>
-      <TrackCards tracks={recentlyPlayed} />
-
-      <h1 className="mt-16">Time Capsule</h1>
-      <TrackCards tracks={allTimeTopTracks} />
-
-      <h1 className="mt-16">Top Artists</h1>
-      <ArtistCards artists={topArtists} />
-
-      <h1 className="mt-16">New releases</h1>
-      <AlbumCards albums={newReleases} /> */}
     </section>
   );
 }
