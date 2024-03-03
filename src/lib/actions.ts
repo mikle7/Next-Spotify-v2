@@ -8,24 +8,24 @@ import {
   TrackAnalysis,
 } from '@/types/types';
 import { customGet } from '@/utils/serverUtils';
-import { mkdir, writeFile } from 'fs/promises';
-import {
-  promises as fsPromises,
-  constants as fsConstants,
-  createWriteStream,
-} from 'fs';
+// import { mkdir, writeFile } from 'fs/promises';
+// import {
+//   promises as fsPromises,
+//   constants as fsConstants,
+//   createWriteStream,
+// } from 'fs';
 import axios from 'axios';
 import { promisify } from 'util';
 import * as stream from 'stream';
 
-async function fileExists(path: string) {
-  try {
-    await fsPromises.access(path, fsConstants.F_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
+// async function fileExists(path: string) {
+//   try {
+//     await fsPromises.access(path, fsConstants.F_OK);
+//     return true;
+//   } catch {
+//     return false;
+//   }
+// }
 export const getNewReleases = async (
   session: AuthSession
 ): Promise<Album[]> => {
@@ -175,13 +175,28 @@ export const getUserLikedSongs = async (
 export const getUserLikedPlaylists = async (
   session: AuthSession
 ): Promise<Playlist[]> => {
+  const list = [];
   const data = await customGet(
-    'https://api.spotify.com/v1/me/playlists',
+    'https://api.spotify.com/v1/me/playlists?limit=50',
     session
   );
-  await saveUserData(session.user.name, data.items, session);
 
-  return data.items;
+  list.push(...data.items);
+
+  // If the returning data has 50 items, then there are more items to fetch
+  let limit = 50;
+  let currUrl = data.next;
+
+  while (currUrl !== null) {
+    const nextData = await customGet(currUrl, session);
+    list.push(...nextData.items);
+    limit += 50;
+    currUrl = nextData.next;
+  }
+
+  // await saveUserData(session.user.name, data.items, session);
+
+  return list;
 };
 
 // async function saveUserData(
@@ -242,154 +257,80 @@ type TrackInfo = {
   name: string;
 };
 
-export async function sendRequestToMp3(
-  query: string,
-  directory: string
-) {
-  try {
-    const response = await axios({
-      method: 'post',
-      headers: {
-        'Content-Type':
-          'application/x-www-form-urlencoded; charset=UTF-8',
-      },
-      url: SEARCH_URL,
-      data: { q: query, sort: '2' },
-    });
+// export async function sendRequestToMp3(
+//   query: string,
+//   directory: string
+// ) {
+//   try {
+//     const response = await axios({
+//       method: 'post',
+//       headers: {
+//         'Content-Type':
+//           'application/x-www-form-urlencoded; charset=UTF-8',
+//       },
+//       url: SEARCH_URL,
+//       data: { q: query, sort: '2' },
+//     });
 
-    let jsonData = response.data.slice(0, -4);
-    jsonData = jsonData.substring(1);
-    const convertedResponse: { response: TrackItem[] } =
-      JSON.parse(jsonData);
-    const selectedTrack =
-      convertedResponse.response[1] ||
-      convertedResponse.response.find((track) => track.url);
+//     let jsonData = response.data.slice(0, -4);
+//     jsonData = jsonData.substring(1);
+//     const convertedResponse: { response: TrackItem[] } =
+//       JSON.parse(jsonData);
+//     const selectedTrack =
+//       convertedResponse.response[1] ||
+//       convertedResponse.response.find((track) => track.url);
 
-    if (selectedTrack && selectedTrack.url) {
-      await downloadFile(selectedTrack.url, directory);
-    }
-  } catch (error) {
-    console.error('Error downloading track:', error);
-  }
-}
-
-// export const sendRequestToMp3 = async () => {
-//   // console.log('Sending requests for links', savedTracks.length);
-
-//   // Read saved tracks from Json file in userData/Michael Bell.json
-//   const fileContent = await fsPromises.readFile(
-//     'userData/Michael Bell.json',
-//     'utf8'
-//   );
-
-//   const playlists = JSON.parse(fileContent);
-//   // Map through each playlist and download the tracks
-
-//   const playlistNames = Object.keys(playlists);
-
-//   for (const playlistName of playlistNames) {
-//     const playlist = playlists[playlistName];
-//     await mkdir(`Downloads/${playlistName}`, { recursive: true });
-//     for (const track of playlist) {
-//       try {
-//         const response = await axios({
-//           method: 'post',
-//           headers: {
-//             'Content-Type':
-//               'application/x-www-form-urlencoded; charset=UTF-8',
-//           },
-//           url: SEARCH_URL,
-//           data: {
-//             q: `${track.artist} - ${track.name}`,
-//             sort: '2',
-//           },
-//         });
-
-//         let jsonData = response.data.slice(0, -4);
-//         jsonData = jsonData.substring(1);
-
-//         const convertedResponse: MyMp3Response = JSON.parse(jsonData);
-
-//         // const selectedTrack = convertedResponse.response.find((track) => track.url)
-//         const selectedTrack =
-//           convertedResponse.response[1] ||
-//           convertedResponse.response.find((track) => track.url);
-//         // console.log(`${selectedTrack.artist} - ${selectedTrack.title}.mp3`)
-
-//         if (selectedTrack && selectedTrack.url) {
-//           console.log('SELECTED TRACK  URL', selectedTrack?.url);
-//           // tr.replace(/http:|www|.com/g, '')
-//           // replace(/[^a-zA-Z ]/g, ""
-//           // const replaceExp = new RegExp('/?|\'|_|#/g')
-//           // await downloadFile(selectedTrack.url, `Downloads/${selectedTrack.artist} - ${selectedTrack.title.replace('?','').replace('#','').replace('\\','').replace('+', '')}.mp3`)
-//           try {
-//             // Make a directory for each Playlist name
-//             const directory = `Downloads/${playlistName}/${selectedTrack.artist.replace(
-//               /[^a-zA-Z ]/g,
-//               ''
-//             )} - ${selectedTrack.title.replace(
-//               /[^a-zA-Z ]/g,
-//               ''
-//             )}.mp3`;
-
-//             await downloadFile(selectedTrack.url, directory);
-//           } catch (ex) {
-//             console.log('ERROR DOWNLOADING', ex);
-//             console.log(
-//               ` Finished downloading ${selectedTrack.artist} - ${selectedTrack.title}...`
-//             );
-//           }
-//         }
-//       } catch (ex) {
-//         console.log('ERROR:', ex);
-//       }
+//     if (selectedTrack && selectedTrack.url) {
+//       await downloadFile(selectedTrack.url, directory);
 //     }
+//   } catch (error) {
+//     console.error('Error downloading track:', error);
 //   }
-// };
+// }
 
-async function saveUserData(
-  userName: string,
-  playlistsData: any,
-  session: AuthSession
-) {
-  try {
-    const dirPath = `userData`;
-    const filePath = `${dirPath}/${userName}.json`;
-    await fsPromises.mkdir(dirPath, { recursive: true });
+// async function saveUserData(
+//   userName: string,
+//   playlistsData: any,
+//   session: AuthSession
+// ) {
+//   try {
+//     const dirPath = `userData`;
+//     const filePath = `${dirPath}/${userName}.json`;
+//     await fsPromises.mkdir(dirPath, { recursive: true });
 
-    let existingData = await readPlaylistData(userName);
+//     let existingData = await readPlaylistData(userName);
 
-    for (const playlist of playlistsData) {
-      const playlistName = playlist.name;
-      const tracks = await getPlaylistById(session, playlist.id); // Assuming getPlaylistById is defined
-      const trackItems = tracks.tracks.items.map((item: any) => ({
-        name: item.track.name,
-        artist: item.track.artists?.[0]?.name,
-      }));
+//     for (const playlist of playlistsData) {
+//       const playlistName = playlist.name;
+//       const tracks = await getPlaylistById(session, playlist.id); // Assuming getPlaylistById is defined
+//       const trackItems = tracks.tracks.items.map((item: any) => ({
+//         name: item.track.name,
+//         artist: item.track.artists?.[0]?.name,
+//       }));
 
-      // Update existing data or add new data
-      existingData[playlistName] = trackItems;
-    }
+//       // Update existing data or add new data
+//       existingData[playlistName] = trackItems;
+//     }
 
-    // Save updated data to JSON file
-    await fsPromises.writeFile(
-      filePath,
-      JSON.stringify(existingData, null, 2)
-    );
+//     // Save updated data to JSON file
+//     await fsPromises.writeFile(
+//       filePath,
+//       JSON.stringify(existingData, null, 2)
+//     );
 
-    // Download tracks for all playlists
-    for (const playlistName in existingData) {
-      await downloadPlaylistTracks(
-        playlistName,
-        existingData[playlistName]
-      );
-    }
+//     // Download tracks for all playlists
+//     for (const playlistName in existingData) {
+//       await downloadPlaylistTracks(
+//         playlistName,
+//         existingData[playlistName]
+//       );
+//     }
 
-    console.log(`Data processed for user ${userName}`);
-  } catch (error) {
-    console.error('Error processing user data:', error);
-  }
-}
+//     console.log(`Data processed for user ${userName}`);
+//   } catch (error) {
+//     console.error('Error processing user data:', error);
+//   }
+// }
 
 const finished = promisify(stream.finished);
 // export async function downloadFile(
@@ -406,52 +347,52 @@ const finished = promisify(stream.finished);
 //     return finished(writer); //this is a Promise
 //   });
 // }
-async function downloadFile(
-  fileUrl: string,
-  outputLocationPath: string
-) {
-  const writer = createWriteStream(outputLocationPath);
-  return axios({
-    method: 'get',
-    url: fileUrl,
-    responseType: 'stream',
-  }).then((response) => {
-    response.data.pipe(writer);
-    return finished(writer); //this is a Promise
-  });
-}
+// async function downloadFile(
+//   fileUrl: string,
+//   outputLocationPath: string
+// ) {
+//   const writer = createWriteStream(outputLocationPath);
+//   return axios({
+//     method: 'get',
+//     url: fileUrl,
+//     responseType: 'stream',
+//   }).then((response) => {
+//     response.data.pipe(writer);
+//     return finished(writer); //this is a Promise
+//   });
+// }
 
-export async function readPlaylistData(userName: string) {
-  console.log('READING PLAYLIST DATA', userName);
-  const filePath = `userData/${userName}.json`;
-  if (await fileExists(filePath)) {
-    const fileContent = await fsPromises.readFile(filePath, 'utf8');
-    console.log('Returning file...');
-    return JSON.parse(fileContent);
-  }
-  console.log('File does not exist');
-  return {};
-}
+// export async function readPlaylistData(userName: string) {
+//   console.log('READING PLAYLIST DATA', userName);
+//   const filePath = `userData/${userName}.json`;
+//   if (await fileExists(filePath)) {
+//     const fileContent = await fsPromises.readFile(filePath, 'utf8');
+//     console.log('Returning file...');
+//     return JSON.parse(fileContent);
+//   }
+//   console.log('File does not exist');
+//   return {};
+// }
 
-async function downloadPlaylistTracks(
-  playlistName: string,
-  playlist: TrackInfo[]
-) {
-  await fsPromises.mkdir(`Downloads/${playlistName}`, {
-    recursive: true,
-  });
+// async function downloadPlaylistTracks(
+//   playlistName: string,
+//   playlist: TrackInfo[]
+// ) {
+//   await fsPromises.mkdir(`Downloads/${playlistName}`, {
+//     recursive: true,
+//   });
 
-  const downloadPromises = playlist.map((track) => {
-    const query = `${track.artists} - ${track.name}`;
-    const directory = `Downloads/${playlistName}/${track.artists.replace(
-      /[^a-zA-Z ]/g,
-      ''
-    )} - ${track.name.replace(/[^a-zA-Z ]/g, '')}.mp3`;
-    return sendRequestToMp3(query, directory);
-  });
+//   const downloadPromises = playlist.map((track) => {
+//     const query = `${track.artists} - ${track.name}`;
+//     const directory = `Downloads/${playlistName}/${track.artists.replace(
+//       /[^a-zA-Z ]/g,
+//       ''
+//     )} - ${track.name.replace(/[^a-zA-Z ]/g, '')}.mp3`;
+//     return sendRequestToMp3(query, directory);
+//   });
 
-  await Promise.allSettled(downloadPromises);
-}
+//   await Promise.allSettled(downloadPromises);
+// }
 
 export const getPlaylistById = async (
   session: AuthSession,

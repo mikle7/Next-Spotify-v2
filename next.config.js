@@ -19,6 +19,10 @@ const nextConfig = {
       'lineup-images.scdn.co',
       'thisis-images.scdn.co',
       'image-cdn-ak.spotifycdn.com',
+      'seeded-session-images.scdn.co',
+      'thisis-images.spotifycdn.com',
+      'image-cdn-fa.spotifycdn.com',
+      '*',
     ],
   },
 };
