@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
-import { AuthSession } from "@/types/types";
-import { ChevronLeft, ChevronRight, LogOut, User2 } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import CollectionTabs from "./CollectionTabs";
-import SearchInput from "./SearchInput";
+import { AuthSession } from '@/types/types';
+import {
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  User2,
+} from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import CollectionTabs from './CollectionTabs';
 
 export default function Header() {
   const { data } = useSession();
@@ -15,7 +19,7 @@ export default function Header() {
   const router = useRouter();
 
   const logout = () => {
-    signOut({ callbackUrl: "http://localhost:3000/login" });
+    signOut({ callbackUrl: 'http://localhost:3000/login' });
   };
 
   return (
@@ -37,10 +41,8 @@ export default function Header() {
           </button>
         </div>
 
-        {pathname.includes("/search") && <SearchInput />}
-
-        {pathname.includes("/collection") &&
-          pathname !== "/collection/tracks" && <CollectionTabs />}
+        {pathname.includes('/collection') &&
+          pathname !== '/collection/tracks' && <CollectionTabs />}
       </div>
 
       <div className="flex items-center gap-6">

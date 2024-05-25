@@ -43,27 +43,27 @@ export const Playlists = async ({
     const requests = checkedPlaylists.map((playlistId) =>
       getPlaylistById(session, playlistId)
     );
-    const responses = await Promise.all(requests);
+    // const responses = await Promise.all(requests);
 
     // For each response (playlist), we access tracks and then map over each item.
     // Within the item we want to access track, and within that we will get the first artis and the name of the track
 
-    const tracks = responses.map((playlist) =>
-      playlist.tracks.items.map((item) => ({
-        artist: item.track.artists[0].name,
-        name: item.track.name,
-      }))
-    );
+    // const tracks = responses.map((playlist) =>
+    //   playlist.tracks.items.map((item) => ({
+    //     artist: item.track.artists[0].name,
+    //     name: item.track.name,
+    //   }))
+    // );
 
     // fetchmp3(tracks.flat());
-    await axios.post('/api/tracks', { tracks });
-    console.log(tracks);
+    // await axios.post('/api/tracks', { tracks });
+    // console.log(tracks);
   };
 
   console.log(playlists.length);
   return (
     <div>
-      <button onClick={handleDownload}>Download</button>
+      {/* <button onClick={handleDownload}>Download</button> */}
       {playlists.map((playlist) => (
         <LibraryItemCard
           key={playlist.id}

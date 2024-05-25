@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
-import { Track } from "@/types/types";
-import { fmtMSS } from "@/utils/clientUtils";
-import { Clock3, Music } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import PlayTrackButton from "./PlayTrackButton";
+import { Track } from '@/types/types';
+import { fmtMSS } from '@/utils/clientUtils';
+import { Clock3, Music } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
 
 interface Props {
   tracks: Track[];
@@ -38,7 +37,7 @@ export default function TracksTable({
 
             <div
               className={`${
-                showAlbum ? "col-span-6" : "col-span-10"
+                showAlbum ? 'col-span-6' : 'col-span-10'
               } text-sm font-semibold text-left`}
             >
               Title
@@ -66,28 +65,25 @@ export default function TracksTable({
         {tracks?.map((track, index) => (
           <div
             className={`grid py-2 px-4 rounded-lg grid-cols-12 ${
-              hoveredRow === index ? "bg-paper-600" : "bg-transparent"
+              hoveredRow === index ? 'bg-paper-600' : 'bg-transparent'
             }`}
             key={track.id + index + 1}
             onMouseEnter={() => setHoveredRow(index)}
             onMouseLeave={() => setHoveredRow(null)}
           >
-            {hoveredRow === index ? (
-              <PlayTrackButton track={track} className="text-2xl" />
-            ) : (
-              <span className="flex items-center col-span-1 text-sm text-gray">
-                {index + 1}
-              </span>
-            )}
+            <span className="flex items-center col-span-1 text-sm text-gray">
+              {index + 1}
+            </span>
 
             <div
               className={`${
-                showAlbum ? "col-span-6" : "col-span-10"
+                showAlbum ? 'col-span-6' : 'col-span-10'
               } flex items-center w-full`}
             >
               <div className="flex items-center w-full gap-4">
                 {showCover &&
-                  (track.album.images && track.album.images.length > 0 ? (
+                  (track.album.images &&
+                  track.album.images.length > 0 ? (
                     <div className="flex-shrink-0 w-10 h-10">
                       <Image
                         src={track.album.images?.[0].url as string}
@@ -121,7 +117,9 @@ export default function TracksTable({
                             href={`/artists/${artist.id}`}
                             className="hover:text-white hover:underline"
                           >
-                            {index !== 0 ? `, ${artist.name}` : artist.name}
+                            {index !== 0
+                              ? `, ${artist.name}`
+                              : artist.name}
                           </Link>
                         ))}
                       </span>
