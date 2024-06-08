@@ -1,9 +1,9 @@
 'use client';
 
-import { getPlaylistById } from '@/lib/actions';
-import LibraryItemCard from './LibraryItemCard';
 import { useState } from 'react';
-import { Playlist, AuthSession } from '@/types/types';
+import LibraryItemCard from './LibraryItemCard';
+import { AuthSession, Playlist } from '@/types/types';
+import { getPlaylistById } from '@/lib/actions';
 
 export default function Playlists({
   playlists,
@@ -25,31 +25,34 @@ export default function Playlists({
   };
 
   const handleDownload = async () => {
-    const requests = checkedPlaylists.map((playlistId) =>
-      getPlaylistById(session, playlistId)
-    );
-    const responses = await Promise.all(requests);
-    const tracks = responses.flatMap((playlist) =>
-      playlist.tracks.items.map((item) => ({
+    const requests = checkedPlaylists.map(async (playlistId) => {
+      const playlist = await getPlaylistById(session, playlistId);
+      const tracks = playlist.tracks.items.map((item) => ({
         artist: item.track.artists[0].name,
         name: item.track.name,
-      }))
-    );
-
-    console.log('TRACKS', tracks);
-    await fetch('/api/tracks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tracks }),
+      }));
+      return {
+        playlistName: playlist.name,
+        tracks,
+      };
     });
+
+    const playlistsToDownload = await Promise.all(requests);
+    for (const { playlistName, tracks } of playlistsToDownload) {
+      await fetch('/api/tracks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tracks, playlistName }),
+      });
+    }
   };
 
   return (
     <div>
       <button onClick={handleDownload}>Download</button>
-      {playlists.map((playlist) => (
+      {playlists.map((playlist: Playlist) => (
         <LibraryItemCard
           key={playlist.id}
           entity={playlist}

@@ -23,12 +23,12 @@ type MyMp3Response = {
 };
 
 export const sendRequestToMp3 = async (
-  tracks: { name: string; artist: string }[]
+  tracks: { name: string; artist: string }[],
+  playlistName: string
 ) => {
-  console.log('Sending requests for links', tracks.length);
-  console.log('TRACKS RECEIVED', tracks);
+  const failedDownloads: { artist: string; name: string }[] = [];
 
-  for (const track of tracks) {
+  const downloadPromises = tracks.map(async (track) => {
     try {
       const response = await axios({
         method: 'post',
@@ -50,6 +50,14 @@ export const sendRequestToMp3 = async (
 
       const convertedResponse: MyMp3Response = JSON.parse(jsonData);
 
+      if (
+        !convertedResponse.response ||
+        convertedResponse.response.length === 0
+      ) {
+        failedDownloads.push(track);
+        return;
+      }
+
       const selectedTrack =
         convertedResponse.response[1] ||
         convertedResponse.response.find((track) => track.url);
@@ -57,15 +65,34 @@ export const sendRequestToMp3 = async (
       if (selectedTrack && selectedTrack.url) {
         console.log('SELECTED TRACK URL', selectedTrack.url);
         try {
-          const directory = `Downloads/${selectedTrack.artist} - ${selectedTrack.title}.mp3`;
-          await downloadFile(selectedTrack.url, directory);
+          const directory = `Downloads/${playlistName}`;
+          await mkdir(directory, { recursive: true });
+
+          const outputLocationPath = `${directory}/${selectedTrack.artist} - ${selectedTrack.title}.mp3`;
+
+          if (await fileExists(outputLocationPath)) {
+            console.log(`File already exists: ${outputLocationPath}`);
+            return;
+          }
+
+          await downloadFile(selectedTrack.url, outputLocationPath);
         } catch (ex) {
           console.log('ERROR DOWNLOADING', ex);
+          failedDownloads.push(track);
         }
+      } else {
+        failedDownloads.push(track);
       }
     } catch (ex) {
       console.log('ERROR:', ex);
+      failedDownloads.push(track);
     }
+  });
+
+  await Promise.all(downloadPromises);
+
+  if (failedDownloads.length > 0) {
+    console.log('Failed Downloads:', failedDownloads);
   }
 };
 
@@ -74,14 +101,32 @@ export async function downloadFile(
   outputLocationPath: string
 ): Promise<any> {
   const writer = createWriteStream(outputLocationPath);
-  return axios({
+  const response = await axios({
     method: 'get',
     url: fileUrl,
     responseType: 'stream',
-  }).then((response) => {
-    response.data.pipe(writer);
-    return finished(writer); // this is a Promise
   });
+
+  const totalLength = response.headers['content-length'];
+
+  response.data.on('data', (chunk: any) => {
+    const progress = (writer.bytesWritten / totalLength) * 100;
+    process.stdout.write(
+      `Downloading ${outputLocationPath}: ${progress.toFixed(2)}%\r`
+    );
+  });
+
+  response.data.pipe(writer);
+  return finished(writer); // this is a Promise
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await fsPromises.access(path, fsConstants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function GET(request: Request) {
@@ -91,15 +136,11 @@ export async function GET(request: Request) {
 export async function HEAD(request: Request) {}
 
 export async function POST(request: Request) {
-  const playlist = await request.json();
+  const { tracks, playlistName } = await request.json();
 
-  console.log('REQUEST TRACKS', playlist.tracks);
+  console.log('REQUEST TRACKS', tracks);
 
-  await Promise.all(
-    playlist.tracks.map(async (track: any) => {
-      await sendRequestToMp3([track]);
-    })
-  );
+  await sendRequestToMp3(tracks, playlistName);
 
   return new Response(
     JSON.stringify({ message: 'Download initiated' }),
